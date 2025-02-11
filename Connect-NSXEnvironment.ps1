@@ -1,4 +1,4 @@
-﻿function Connect-NSXEnvironment {
+﻿function Connect-NSXTEnvironment {
     <#
     .SYNOPSIS
         Connects to an NSX-T Manager with dynamic environment selection from JSON.
@@ -32,12 +32,6 @@
         Date: YYYY-MM-DD
         Requires: VMware PowerCLI and an active NSX-T Manager.
     #>
-
-    ### RETRY CONSTANTS ###
-    $MaxRetries = 3
-    $RetryDelay = 5
-    $Timeout    = 60
-
     param(
         [Parameter(Position = 0, Mandatory = $true,
                    HelpMessage = "Select an NSX-T Manager environment (as defined in JSON).")]
@@ -50,7 +44,12 @@
 
     # JSON file path
     $jsonFilePath = ".\NSXT_ServerLookup.json"
-
+    
+    ### RETRY CONSTANTS ###
+    $MaxRetries = 3
+    $RetryDelay = 5
+    $Timeout    = 60
+    
     # Check existence of JSON file
     Write-Verbose "Checking for NSX-T Server JSON file..."
     if (-not (Test-Path $jsonFilePath)) {
