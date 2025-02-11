@@ -18,12 +18,12 @@ By leveraging **PowerCLI** and best practices, these scripts reduce administrati
 
 ## Contents
 
-1. **[Connect-NSXEnvironment](#connect-nsxenvironment)**
+1. **[Connect-NSXTEnvironment](#connect-nsxtenvironment)**
 2. **[New-NSXTGateway](#new-nsxtgateway)**  
 
 ---
 
-## Connect-NSXEnvironment
+## Connect-NSXTEnvironment
 
 **Purpose**  
 Authenticates to an NSX‑T Manager environment specified by environment name (e.g., "Management", "Workload"), loading environment/server details from a JSON lookup file.
@@ -37,8 +37,8 @@ Authenticates to an NSX‑T Manager environment specified by environment name (e
 **Usage**:
 ```powershell
 # Connect to the "Management" environment
-Connect-NSXEnvironment Management -Verbose
+Connect-NSXTEnvironment Management -Verbose
 
 # Connect using explicit credentials
 $cred = Get-Credential
-Connect-NSXEnvironment Workload -Credential $cred -Verbose
+Connect-NSXTEnvironment Workload -Credential $cred -Verbose
