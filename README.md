@@ -42,3 +42,18 @@ Connect-NSXTEnvironment Management -Verbose
 # Connect using explicit credentials
 $cred = Get-Credential
 Connect-NSXTEnvironment Workload -Credential $cred -Verbose
+```
+
+## Final Notes
+
+Feel free to **clone** this repository, **customize** these scripts, and **extend** them for your environment. Contributions are always welcome—please open an [issue](../../issues) or submit a [pull request](../../pulls) if you have any improvements or bug fixes. 
+
+
+## Disclaimer
+
+These scripts and any associated documentation (“Materials”) are provided “as is” and “as available,” without warranties or conditions of any kind, whether express or implied. By using the Materials, you agree and acknowledge the following:
+
+1. You are solely responsible for determining the appropriateness of the Materials for your purposes and assume any risks associated with their use.
+2. We make no representations or warranties regarding the Materials, including without limitation implied warranties of merchantability, fitness for a particular purpose, or non-infringement.
+3. In no event shall we be liable for any claim, damages, or other liability—whether in contract, tort, or otherwise—arising from or connected with the Materials or your use of them.
+4. You release us from all liability and agree to hold us harmless for any direct, indirect, incidental, or consequential damages associated with the use of the Materials.
