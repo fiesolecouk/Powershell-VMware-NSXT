@@ -19,7 +19,8 @@ By leveraging **PowerCLI** and best practices, these scripts reduce administrati
 ## Contents
 
 1. **[Connect-NSXTEnvironment](#connect-nsxtenvironment)**
-2. **[New-NSXTGateway](#new-nsxtgateway)**  
+2. **[Check-NSXTConnections](#check-nsxtconnections)**
+3. **[New-NSXTGateway](#new-nsxtgateway)**  
 
 ---
 
@@ -42,6 +43,27 @@ Connect-NSXTEnvironment Management -Verbose
 # Connect using explicit credentials
 $cred = Get-Credential
 Connect-NSXTEnvironment Workload -Credential $cred -Verbose
+```
+## Check-NSXTConnections
+
+**Purpose**
+Check-NSXTConnections is a PowerShell script for VMware NSX-T PowerCLI that retrieves all active NSX-T connections, displays them, and interactively prompts you to set a default connection if one is not already set.
+
+**Key Features**
+- **Automatic Retrieval** – Collects all active NSX-T connections from the current PowerCLI session.
+- **Interactive Selection** – Prompts to set a default connection when necessary.
+- **Verbose Logging** – Supports detailed logging with `-Verbose` for easier troubleshooting.
+- **Easy Integration** – Returns a structured object for use in automation scripts.
+
+**Usage**:
+```powershell
+# Check what NSXT Connection are already established
+$result = Check-NSXTConnections
+
+# Returned output
+$result.AllConnections       # List all active connections
+$result.DefaultConnection    # Displays the default connection
+$result.Message              # Summary of the connection status
 ```
 
 ## Final Notes
