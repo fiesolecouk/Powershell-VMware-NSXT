@@ -1,138 +1,229 @@
-<#
-.SYNOPSIS
-    Retrieves an NSX-T gateway (Tier-0 or Tier-1) by its display name or its ID.
+function New-NSXTGateway {
+    <#
+    .SYNOPSIS
+        Creates an NSX-T gateway (Tier-0 or Tier-1) using NSX-T PowerCLI service methods.
 
-.DESCRIPTION
-    The Get-NSXTGateway cmdlet retrieves an NSX-T gateway from the NSX-T Manager by querying both the Tier-0
-    and Tier-1 gateway services. It sets the NSX-T policy context (if the helper cmdlet Set-NsxtPolicyPath is available)
-    using the provided Domain and GatewayPolicyId parameters. The cmdlet supports two parameter sets:
-      - **ByName:** Retrieves the gateway based on its display name.
-      - **ById:** Retrieves the gateway based on its NSX-T identifier.
-    The function returns a PSCustomObject with:
-      - **Action:** "Found", "NotFound", or "Error".
-      - **Gateway:** The retrieved NSX-T gateway object (or $null if not found).
-      - **Message:** A human-readable message describing the result.
+    .DESCRIPTION
+        This cmdlet creates a new NSX-T gateway using the appropriate NSX-T service
+        based on the specified Tier ("tier0" or "tier1"). It accepts parameters for Tags,
+        LinkedTier0Gateway (for Tier-1 gateways), failover mode, and cluster.
+        
+        The cmdlet calls the Get-NSXTGateway cmdlet to check if a matching gateway already exists
+        (searching by GatewayName only). If found, it returns the existing gateway with an action of "Found"
+        and makes no changes. Otherwise, if the ShouldProcess check passes (including -WhatIf), it proceeds with creation.
 
-.PARAMETER GatewayName
-    The display name of the NSX-T gateway to retrieve.
-    (Used in the "ByName" parameter set.)
+    .PARAMETER GatewayName
+        The display name for the gateway.
 
-.PARAMETER GatewayId
-    The NSX-T identifier of the gateway to retrieve.
-    (Used in the "ById" parameter set.)
+    .PARAMETER Tier
+        Specifies the gateway tier. Valid options are "tier0" or "tier1".
 
-.PARAMETER Domain
-    (Optional) Specifies the NSX-T domain (project) in which to search for the gateway. The default is "default".
+    .PARAMETER Description
+        (Optional) A description for the gateway.
 
-.PARAMETER GatewayPolicyId
-    (Optional) Specifies the NSX-T gateway policy ID if applicable. The default is "default".
+    .PARAMETER Tags
+        (Optional) An array of tag objects for the gateway.
 
-.INPUTS
-    None. This cmdlet does not accept pipeline input.
+    .PARAMETER LinkedTier0Gateway
+        (Optional) For Tier-1 gateways, the ID of the linked Tier-0 gateway.
 
-.OUTPUTS
-    A PSCustomObject with the following properties:
-      - Action: "Found" if the gateway is retrieved, "NotFound" if it isn’t, or "Error" if an error occurs.
-      - Gateway: The retrieved NSX-T gateway object (or $null).
-      - Message: A descriptive message regarding the result.
+    .PARAMETER Failover
+        Specifies the failover mode for the gateway. Valid options are "Preemptive" or "non-preemptive".
+        The default is "non-preemptive".
 
-.EXAMPLE
-    # Example 1: Retrieve a gateway by its display name from the default domain.
-    $result = Get-NSXTGateway -GatewayName "Edge Gateway"
-    if ($result.Action -eq "Found") {
-        Write-Output "Gateway found. ID: $($result.Gateway.id)"
-    }
-    else {
-        Write-Warning $result.Message
-    }
+    .PARAMETER Cluster
+        (Optional) The cluster (or cluster ID) to associate with the gateway.
 
-.EXAMPLE
-    # Example 2: Retrieve a gateway by its ID from a specific project.
-    $result = Get-NSXTGateway -GatewayId "gateway-12345" -Domain "ProjectA" -GatewayPolicyId "gw-policy-01"
-    Write-Output $result
+    .PARAMETER Domain
+        (Optional) Specifies the NSX-T domain (project) in which the gateway exists. Default is "default".
 
-.NOTES
-    Author: Your Name
-    Date: YYYY-MM-DD
-    Requires: NSX-T PowerCLI and an active NSX-T session (e.g., Connect-NsxtServer)
-#>
+    .PARAMETER GatewayPolicyId
+        (Optional) Specifies the NSX-T gateway policy ID. Default is "default".
 
-function Get-NSXTGateway {
-    [CmdletBinding(DefaultParameterSetName = "ByName", SupportsShouldProcess = $false)]
+    .EXAMPLE
+        # Example 1: Create a new Tier-0 gateway.
+        $result = New-NSXTGateway -GatewayName "Edge Gateway" -Tier "tier0" -Description "Primary Tier-0 gateway" `
+                   -Tags @(@{ scope="environment"; tag="production" }) -Failover "non-preemptive" -Verbose
+        Write-Output $result
+
+    .EXAMPLE
+        # Example 2: Return an existing Tier-1 gateway by display name without making any changes.
+        $result = New-NSXTGateway -GatewayName "Branch Gateway" -Tier "tier1" -Verbose
+        Write-Output $result
+
+    .EXAMPLE
+        # Example 3: Simulate (WhatIf) creation of a new Tier-0 gateway.
+        $result = New-NSXTGateway -GatewayName "New Gateway" -Tier "tier0" -Description "Test gateway" `
+                   -Failover "non-preemptive" -WhatIf -Verbose
+        Write-Output $result
+
+    .NOTES
+        Author: Your Name
+        Date: YYYY-MM-DD
+        Requires: NSX-T PowerCLI and an active NSX-T session (e.g., Connect-NsxtServer)
+    #>
+
+    [CmdletBinding(DefaultParameterSetName = "Default", ConfirmImpact = 'Medium', SupportsShouldProcess = $true)]
     param(
-        [Parameter(Mandatory = $true, ParameterSetName = "ByName", Position = 0, HelpMessage = "Enter the display name of the NSX-T gateway to retrieve.")]
+        [Parameter(Mandatory = $true, HelpMessage = "Enter the display name for the gateway.")]
         [string]$GatewayName,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "ById", Position = 0, HelpMessage = "Enter the ID of the NSX-T gateway to retrieve.")]
-        [string]$GatewayId,
-
-        [Parameter(Mandatory = $false, HelpMessage = "Specify the NSX-T domain (project) in which to search. Default is 'default'.")]
+        [Parameter(Mandatory = $true, HelpMessage = "Specify the gateway tier. Valid options are 'tier0' or 'tier1'.")]
+        [ValidateSet("tier0", "tier1")]
+        [string]$Tier,
+        
+        [Parameter(Mandatory = $false, HelpMessage = "Enter an optional description for the gateway.")]
+        [string]$Description = "",
+        
+        [Parameter(Mandatory = $false, HelpMessage = "An array of tag objects for the gateway.")]
+        [object[]]$Tags,
+        
+        [Parameter(Mandatory = $false, HelpMessage = "For Tier-1 gateways, the ID of the linked Tier-0 gateway.")]
+        [string]$LinkedTier0Gateway,
+        
+        [Parameter(Mandatory = $false, HelpMessage = "Specify the failover mode for the gateway. Valid options are 'Preemptive' or 'non-preemptive'.")]
+        [ValidateSet("Preemptive", "non-preemptive")]
+        [string]$Failover = "non-preemptive",
+        
+        [Parameter(Mandatory = $false, HelpMessage = "The cluster (or cluster ID) to associate with the gateway.")]
+        [string]$Cluster,
+        
+        [Parameter(Mandatory = $false, HelpMessage = "Specify the NSX-T domain (project) in which the gateway exists. Default is 'default'.")]
         [string]$Domain = "default",
-
-        [Parameter(Mandatory = $false, HelpMessage = "Specify the NSX-T gateway policy ID if applicable. Default is 'default'.")]
+        
+        [Parameter(Mandatory = $false, HelpMessage = "Specify the NSX-T gateway policy ID. Default is 'default'.")]
         [string]$GatewayPolicyId = "default"
     )
 
-    # Set the NSX-T policy context if the helper cmdlet is available.
-    if (Get-Command -Name Set-NsxtPolicyPath -ErrorAction SilentlyContinue) {
-        Set-NsxtPolicyPath -Domain $Domain -GatewayPolicy $GatewayPolicyId
-        Write-Verbose "Set NSX-T policy path to Domain '$Domain', Gateway Policy '$GatewayPolicyId'."
-    }
-    else {
-        Write-Verbose "Set-NsxtPolicyPath cmdlet not found. Ensure you are operating in the correct NSX-T project context."
-    }
+    Write-Verbose "Starting New-NSXTGateway process..."
+    Write-Verbose "Received parameters: GatewayName='$GatewayName', Tier='$Tier', Description='$Description', Domain='$Domain', GatewayPolicyId='$GatewayPolicyId'."
 
-    # Retrieve Tier-0 Gateways.
-    try {
-        $tier0Service = Get-NsxtService -Name "com.vmware.nsx.tier-0s"
-        $tier0Gateways = @()
-        if ($tier0Service) {
-            $tier0Gateways = $tier0Service.list().results
+    # Check ShouldProcess (handles WhatIf) once.
+    if (-not $PSCmdlet.ShouldProcess("NSX-T Gateway", "Creating gateway '$GatewayName'")) {
+        Write-Verbose "WhatIf mode enabled. Simulation only."
+        return [PSCustomObject]@{
+            Action  = "WhatIf"
+            ID      = "WHATIF-GATEWAY-ID"
+            Message = "[WhatIf] Would create NSX-T gateway '$GatewayName' with description '$Description' in Tier '$Tier'."
         }
     }
-    catch {
-        Write-Verbose "Error retrieving Tier-0 gateways: $_"
-        $tier0Gateways = @()
-    }
 
-    # Retrieve Tier-1 Gateways.
-    try {
-        $tier1Service = Get-NsxtService -Name "com.vmware.nsx.tier-1s"
-        $tier1Gateways = @()
-        if ($tier1Service) {
-            $tier1Gateways = $tier1Service.list().results
-        }
-    }
-    catch {
-        Write-Verbose "Error retrieving Tier-1 gateways: $_"
-        $tier1Gateways = @()
-    }
+    Write-Verbose "Skipping NSX-T policy context setup as it is not used in this script."
 
-    # Combine Tier-0 and Tier-1 gateways.
-    $allGateways = $tier0Gateways + $tier1Gateways
-    Write-Verbose "Total gateways retrieved: $($allGateways.Count)"
+    Write-Verbose "Checking for an existing NSX-T gateway using Get-NSXTGateway (search by GatewayName)..."
+    $existingResult = Get-NSXTGateway -GatewayName $GatewayName -Domain $Domain -GatewayPolicyId $GatewayPolicyId -Verbose
+    Write-Verbose "Existing gateway check returned action: '$($existingResult.Action)'."
 
-    # Filter by ID or Name based on parameter set.
-    if ($PSCmdlet.ParameterSetName -eq "ById") {
-        $foundGateway = $allGateways | Where-Object { $_.id -eq $GatewayId }
-    }
-    else {
-        $foundGateway = $allGateways | Where-Object { $_.display_name -eq $GatewayName }
-    }
-
-    if ($foundGateway) {
+    if ($existingResult.Action -eq "Found") {
+        Write-Verbose "NSX-T gateway '$($existingResult.Gateway.display_name)' already exists. No changes will be made."
         return [PSCustomObject]@{
             Action  = "Found"
-            Gateway = $foundGateway
-            Message = "NSX-T gateway retrieved successfully."
+            ID      = $existingResult.Gateway.id
+            Message = "NSX-T gateway '$($existingResult.Gateway.display_name)' already exists. No changes made."
+        }
+    }
+
+    Write-Verbose "No existing gateway found. Proceeding with creation."
+    Write-Verbose "Selecting the appropriate NSX-T gateway service based on Tier '$Tier'..."
+    if ($Tier -eq "tier0") {
+        try {
+            $gwService = Get-NsxtService -Name "com.vmware.nsx.tier-0s"
+            Write-Verbose "Retrieved Tier-0 gateway service successfully."
+        }
+        catch {
+            Write-Error "Error retrieving Tier-0 gateway service: $_"
+            return [PSCustomObject]@{
+                Action  = "Error"
+                ID      = $null
+                Message = "Error retrieving Tier-0 gateway service: $_"
+            }
         }
     }
     else {
-        Write-Warning "No NSX-T gateway found using the provided criteria."
+        try {
+            $gwService = Get-NsxtService -Name "com.vmware.nsx.tier-1s"
+            Write-Verbose "Retrieved Tier-1 gateway service successfully."
+        }
+        catch {
+            Write-Error "Error retrieving Tier-1 gateway service: $_"
+            return [PSCustomObject]@{
+                Action  = "Error"
+                ID      = $null
+                Message = "Error retrieving Tier-1 gateway service: $_"
+            }
+        }
+    }
+
+    if (-not $gwService) {
+        Write-Error "NSX-T gateway service for Tier '$Tier' not found."
         return [PSCustomObject]@{
-            Action  = "NotFound"
-            Gateway = $null
-            Message = "No NSX-T gateway found using the provided criteria."
+            Action  = "Error"
+            ID      = $null
+            Message = "NSX-T gateway service for Tier '$Tier' not found."
+        }
+    }
+    Write-Verbose "NSX-T gateway service for Tier '$Tier' found. Service ID: $($gwService.Id)"
+
+    Write-Verbose "Retrieving gateway creation specification..."
+    try {
+        if ($Tier -eq "tier0") {
+            $gwSpec = $gwService.Help.create.tier_0_router.Create()
+            Write-Verbose "Using Tier-0 creation specification."
+        }
+        else {
+            $gwSpec = $gwService.Help.create.tier_1_router.Create()
+            Write-Verbose "Using Tier-1 creation specification."
+        }
+    }
+    catch {
+        Write-Error "Error retrieving gateway creation specification: $_"
+        return [PSCustomObject]@{
+            Action  = "Error"
+            ID      = $null
+            Message = "Error retrieving gateway creation specification: $_"
+        }
+    }
+
+    Write-Verbose "Populating creation specification with supplied parameters..."
+    $gwSpec.display_name = $GatewayName
+    Write-Verbose "Set display_name to '$GatewayName'."
+    if ($Description) {
+        $gwSpec.description = $Description 
+        Write-Verbose "Set description to '$Description'."
+    }
+    if ($Tags) {
+        $gwSpec.tags = $Tags 
+        Write-Verbose "Set tags to '$(ConvertTo-Json $Tags)'."        
+    }
+    if (($Tier -eq "tier1") -and $LinkedTier0Gateway) {
+        $gwSpec.linked_tier0_gateway = @{ target_id = $LinkedTier0Gateway; target_type = "Tier0" }
+        Write-Verbose "Set linked_tier0_gateway to ID '$LinkedTier0Gateway'."
+    }
+    if ($PSBoundParameters.ContainsKey("Failover")) {
+        $gwSpec.failover_mode = $Failover 
+        Write-Verbose "Set failover_mode to '$Failover'."
+    }
+    if ($Cluster) {
+        $gwSpec.cluster = $Cluster 
+        Write-Verbose "Set cluster to '$Cluster'."
+    }
+
+    Write-Verbose "Attempting to create the new NSX-T gateway..."
+    try {
+        $newGateway = $gwService.create($gwSpec)
+        Write-Verbose "Gateway '$($newGateway.display_name)' created successfully with ID '$($newGateway.id)'."
+        return [PSCustomObject]@{
+            Action  = "Created"
+            ID      = $newGateway.id
+            Message = "NSX-T gateway '$($newGateway.display_name)' created successfully."
+        }
+    }
+    catch {
+        Write-Error "Error creating NSX-T gateway: $_"
+        return [PSCustomObject]@{
+            Action  = "Error"
+            ID      = $null
+            Message = "Error creating NSX-T gateway: $_"
         }
     }
 }
