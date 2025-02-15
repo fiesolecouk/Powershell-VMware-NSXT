@@ -1,6 +1,6 @@
 # NSX-T Scripts and Functions
 
-A collection of PowerShell/PowerCLI scripts and functions designed to automate and standardize various **VMware NSX-T** operations. These scripts streamline tasks like connecting to NSX-T environments, creating and updating firewall rules, groups, IP sets, segments, gateways, and more.
+A collection of PowerShell/PowerCLI scripts and functions designed to automate and standardise various **VMware NSX-T** operations. These scripts streamline tasks like connecting to NSX-T environments, creating and updating firewall rules, groups, IP sets, segments, gateways, and more.
 
 ## Overview
 
@@ -68,7 +68,7 @@ $result.Message              # Summary of the connection status
 
 ## Final Notes
 
-Feel free to **clone** this repository, **customize** these scripts, and **extend** them for your environment. Contributions are always welcome—please open an [issue](../../issues) or submit a [pull request](../../pulls) if you have any improvements or bug fixes. 
+Feel free to **clone** this repository, **customise** these scripts, and **extend** them for your environment. Contributions are always welcome—please open an [issue](../../issues) or submit a [pull request](../../pulls) if you have any improvements or bug fixes. 
 
 
 ## Disclaimer
