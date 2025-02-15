@@ -64,6 +64,17 @@ Finally, the script returns a `PSCustomObject` that includes:
 - `DefaultConnection`: The default connection (if any).
 - `Message`: A summary message indicating the default connection status.
 
+### 5. Example Verbose Logging Output (Multiple Connections Found and a Default Exists)
+
+When running the `Check-NSXTConnections` script with the `-Verbose` switch and multiple NSX-T connections are found, with one already set as default, you might see output similar to this:
+
+    PS C:\> Check-NSXTConnections -Verbose  
+    VERBOSE: Existing NSX-T Connections:  
+    VERBOSE: [1] Server: nsxt01.example.com; User: admin  
+    VERBOSE: [2] Server: nsxt02.example.com; User: admin2  
+    VERBOSE: Default NSX-T Connection: nsxt02.example.com (User: admin2)  
+    VERBOSE: Default is set to nsxt02.example.com.
+
 ## Usage Examples
 
 ### Interactive Mode
