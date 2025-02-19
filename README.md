@@ -20,7 +20,8 @@ By leveraging **PowerCLI** and best practices, these scripts reduce administrati
 
 1. **[Connect-NSXTEnvironment](#connect-nsxtenvironment)**
 2. **[Check-NSXTConnections](#check-nsxtconnections)**
-3. **[New-NSXTGateway](#new-nsxtgateway)**  
+3. **[New-NSXTGateway](#new-nsxtgateway)**
+4. **[New-NSXTGroup](#new-nsxtgroup)** 
 
 ---
 
@@ -64,6 +65,31 @@ $result = Check-NSXTConnections
 $result.AllConnections       # List all active connections
 $result.DefaultConnection    # Displays the default connection
 $result.Message              # Summary of the connection status
+```
+
+## New-NSXTGroup
+
+**Purpose**  
+Creates or updates an NSX‑T group within a specified domain (project) using NSX‑T PowerCLI service methods. It compares existing group settings with provided parameters and either returns the current group or updates/creates one as needed.
+
+**Key Features**  
+- **Group Creation & Update:** Automatically creates a new group or updates an existing one if its description or membership criteria differ from the provided values.  
+- **Dynamic Membership Expression:** Accepts membership rules as an array of hashtables for dynamic group selection.  
+- **Force Update:** Supports a `-Force` switch to update an existing group when parameters differ.  
+- **WhatIf Support:** Integrates PowerShell’s WhatIf functionality to simulate actions without applying changes.  
+- **Verbose Logging & Error Handling:** Provides detailed logging for troubleshooting and clear error messages on failure.
+
+**Usage**:
+```powershell
+# Simulate creating a new group (WhatIf mode)
+New-NSXTGroup -GroupName "New Group" -Description "Created via PowerShell" `
+              -Expression @(@{ resource_type = "Condition"; field = "name"; operator = "CONTAINS"; value = "server" }) `
+              -WhatIf -Verbose
+
+# Update an existing group with different parameters using Force
+New-NSXTGroup -GroupName "New Group" -Description "Updated Description" `
+              -Expression @(@{ resource_type = "Condition"; field = "name"; operator = "CONTAINS"; value = "newValue" }) `
+              -Force -Verbose
 ```
 
 ## Final Notes
