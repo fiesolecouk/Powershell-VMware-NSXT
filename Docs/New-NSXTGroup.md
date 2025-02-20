@@ -81,6 +81,3 @@ New-NSXTGroup -GroupName "New Group" -Description "Updated Description" `
 ## Conclusion
 
 The `New-NSXTGroup` script streamlines NSX‑T group management by automating the process of creating or updating groups based on specified parameters. Its support for dynamic membership expressions, WhatIf simulations, and detailed logging makes it a valuable tool for administrators managing NSX‑T environments.
-
-For further information, consult the NSX‑T PowerCLI documentation or contact your system administrator.
-```
